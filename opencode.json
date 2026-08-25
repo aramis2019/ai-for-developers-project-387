@@ -13,7 +13,7 @@
       "enabled": true,
       "headers": {
         "Authorization": "Bearer {env:GITHUB_TOKEN}",
-        "X-MCP-Readonly": "true"
+        "X-MCP-Readonly": "false"
       }
     },
     "playwright": {
