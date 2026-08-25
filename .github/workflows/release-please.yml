@@ -1,0 +1,38 @@
+name: release-please
+
+# release-please слушает пуши в main, парсит Conventional Commits и держит
+# «release PR» — накопительный PR с обновлённым CHANGELOG.md и bump'ом версии
+# в package.json. Мёрдж этого PR = релиз: создаётся тег vX.Y.Z и GitHub Release.
+#
+# Тип бампа определяется по типам коммитов с прошлого релиза:
+#   feat        → minor (в pre-major режиме — patch, см. bump-patch-for-minor-pre-major)
+#   fix / perf  → patch
+#   feat! / BREAKING CHANGE в теле → major
+#
+# Конфиг: release-please-config.json + .release-please-manifest.json.
+# Соглашение о коммитах: см. AGENTS.md, раздел «Conventional Commits».
+#
+# Про токен. PR, созданный от GITHUB_TOKEN, намеренно не запускает workflow —
+# так GitHub защищается от рекурсии, и CI на release PR не гоняется.
+# Чтобы проверки шли, нужен внешний токен в секрете RELEASE_PLEASE_TOKEN
+# (fine-grained PAT на этот репозиторий: Contents=RW, Pull requests=RW).
+# Пока секрет не заведён, выражение падает обратно на GITHUB_TOKEN и релизный
+# цикл работает как раньше — просто без проверок на самом release PR.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v4
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
