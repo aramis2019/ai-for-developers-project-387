@@ -1,0 +1,171 @@
+name: "opencode: lighthouse"
+
+# Ночной аудит производительности прода.
+#
+# Ночью Lighthouse снимает метрики с https://meetly.linnetlab.com/,
+# агент сравнивает их с docs/performance-baseline.md и при просадке заводит
+# issue с разбором. Утром команда смотрит отчёт и решает, нужны ли правки.
+#
+# workflow_dispatch — ручной запуск для отладки: Actions -> "opencode: lighthouse"
+# -> Run workflow. Для проверки без записи в трекер ставьте dry_run.
+#
+# У schedule и workflow_dispatch нет комментария, из которого агент мог бы
+# взять инструкции, поэтому вход `prompt` для них обязателен.
+
+on:
+  schedule:
+    # 01:30 UTC = 04:30 MSK — отчёт готов к началу рабочего дня.
+    # Минуты не круглые намеренно: на :00 расписания GitHub встают в общую
+    # очередь и стартуют с заметной задержкой.
+    - cron: "30 1 * * *"
+  workflow_dispatch:
+    inputs:
+      urls:
+        description: "Страницы как label=url через запятую. Пусто — из env.DEFAULT_URLS"
+        required: false
+        default: ""
+      runs:
+        description: "Прогонов на страницу (медиана). Для отладки хватает 1"
+        required: false
+        default: "3"
+      dry_run:
+        description: "Только отчёт в логи, issue не создавать"
+        type: boolean
+        required: false
+        default: false
+
+env:
+  DEFAULT_URLS: "home=https://meetly.linnetlab.com/,book=https://meetly.linnetlab.com/book/intro-call"
+  LIGHTHOUSE_VERSION: "12"
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+      issues: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          # Нужна история: агент ищет виновника просадки среди свежих коммитов
+          fetch-depth: 50
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Run Lighthouse
+        env:
+          URLS: ${{ inputs.urls || env.DEFAULT_URLS }}
+          RUNS: ${{ inputs.runs || '3' }}
+        run: |
+          set -euo pipefail
+          mkdir -p reports
+
+          # Chrome предустановлен в образе ubuntu-latest, отдельная установка не нужна
+          echo "Chrome: $(google-chrome --version)"
+
+          IFS=',' read -ra PAIRS <<< "$URLS"
+          for pair in "${PAIRS[@]}"; do
+            label="${pair%%=*}"
+            url="${pair#*=}"
+            for run in $(seq 1 "$RUNS"); do
+              echo "::group::$label run $run — $url"
+              npx --yes "lighthouse@${LIGHTHOUSE_VERSION}" "$url" \
+                --only-categories=performance \
+                --output=json \
+                --output-path="reports/${label}.run${run}.json" \
+                --chrome-flags="--headless=new --no-sandbox --disable-dev-shm-usage" \
+                --quiet
+              echo "::endgroup::"
+            done
+          done
+
+      - name: Build summary
+        run: node .github/scripts/lighthouse-summary.mjs ./reports ./lighthouse-summary.json
+
+      - name: Upload reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighthouse-reports
+          path: |
+            reports/
+            lighthouse-summary.json
+          retention-days: 30
+
+      - name: Analyze with opencode
+        uses: anomalyco/opencode/github@latest
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+        with:
+          model: opencode/claude-sonnet-4-6
+          prompt: |
+            Сравни свежий замер производительности с эталоном и реши,
+            есть ли регрессия.
+
+            Режим: ${{ inputs.dry_run && 'dry-run' || 'обычный' }}
+
+            ## Входные данные
+
+            - `./lighthouse-summary.json` — медианы по метрикам за этот прогон.
+              Читай только его: сырые отчёты в `./reports/` весят мегабайты
+              и целиком не нужны.
+            - `docs/performance-baseline.md` — эталонные значения и пороги.
+
+            Перед сравнением сверь блок `settings` в сводке с разделом
+            «Методика» в baseline. Если форм-фактор или троттлинг разошлись,
+            метрики несравнимы: напиши об этом и заверши работу, issue не заводи.
+
+            ## Правило регрессии
+
+            Пороги бери из раздела «Пороги срабатывания» в baseline, не выдумывай
+            свои. Там для шумных метрик требуется превышение **обоих** порогов —
+            относительного и абсолютного:
+
+            - LCP, FCP, Speed Index: +10% и одновременно +200 мс
+            - TBT: +10% и одновременно +50 мс
+            - CLS: только абсолютный, срабатывает при значении выше 0.02
+            - Performance score: падение на 5 пунктов и более
+
+            Метрику, у которой превышен лишь один из двух порогов, регрессией
+            не считай — это шум замера, а не деградация.
+
+            TBT в отчёте называй именно TBT. Это лабораторный прокси для INP,
+            но не INP: подменять названия нельзя.
+
+            ## Что делать дальше
+
+            Если регрессий нет: коротко подтверди, что метрики в пределах
+            baseline, и заверши работу. Issue не создавай.
+
+            Если регрессии есть — разберись в причине до того, как писать issue:
+
+            1. Посмотри коммиты за период с прошлого замера:
+               `git log --since="7 days ago" --oneline --stat`
+            2. Сопоставь просевшую метрику со сделанными изменениями. Например,
+               рост LCP — новые тяжёлые зависимости или картинки; рост TBT —
+               подросший JS-бандл или синхронная работа при старте; появление
+               CLS — блоки без заданных размеров.
+            3. Отбрось изменения, которые не могли повлиять: правки бэкенда,
+               контракта или CI на клиентские метрики не влияют.
+
+            Затем заведи issue:
+
+            - заголовок: «Просадка производительности: <метрика> на <странице>»
+            - метка: `performance`
+            - тело:
+              - таблица «метрика / baseline / сейчас / дельта / порог» по всем
+                метрикам, а не только просевшим — так видно общую картину
+              - разбор вероятной причины со ссылками на конкретные коммиты
+              - конкретные рекомендации: что именно поменять и в каком файле
+              - оговорка, если уверенности в причине нет: гипотезу лучше
+                обозначить как гипотезу, чем выдать за факт
+
+            В режиме dry-run issue не создавай ни при каком результате: выведи
+            разбор в вывод задачи и заверши работу.
+
+            Код не меняй: это задача на чтение и отчёт.
