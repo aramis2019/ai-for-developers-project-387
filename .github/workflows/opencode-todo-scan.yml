@@ -1,0 +1,90 @@
+name: "opencode: todo scan"
+
+# Инвентаризация технического долга.
+# По расписанию агент обходит кодовую базу, собирает TODO/FIXME/HACK/XXX
+# и заводит один сводный issue. Прошлый отчёт при этом закрывается,
+# чтобы в трекере не копились дубли.
+#
+# У schedule и workflow_dispatch нет комментария, из которого агент мог бы
+# взять инструкции, поэтому вход `prompt` для них обязателен.
+#
+# workflow_dispatch — ручной запуск для отладки: вкладка Actions,
+# workflow «opencode: todo scan», кнопка «Run workflow».
+
+on:
+  schedule:
+    # Каждый понедельник в 09:00 UTC
+    - cron: "0 9 * * 1"
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: "Где искать: путь или glob. Пусто — весь репозиторий"
+        required: false
+        default: ""
+      dry_run:
+        description: "Только отчёт в логи, issue не создавать"
+        type: boolean
+        required: false
+        default: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+      issues: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Run opencode
+        uses: anomalyco/opencode/github@latest
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+        with:
+          model: opencode/claude-sonnet-4-6
+          prompt: |
+            Собери инвентаризацию технического долга по маркерам в комментариях.
+
+            Область поиска: ${{ inputs.scope || 'весь репозиторий' }}
+            Режим: ${{ inputs.dry_run && 'dry-run' || 'обычный' }}
+
+            ## Что искать
+
+            Маркеры TODO, FIXME, HACK, XXX в комментариях кода.
+            Языки в репозитории: TypeScript/TSX, C#, TypeSpec (.tsp), YAML.
+
+            Исключить из обхода:
+            - node_modules, bin, obj, dist, .git
+            - contracts/dist/openapi.yaml, frontend/src/api/schema.d.ts,
+              backend/src/Meetly.Contracts/Generated/ — генерируемые артефакты
+            - .github/workflows/opencode-todo-scan.yml — сам этот файл
+
+            Для каждой находки зафиксируй: файл со ссылкой на строку,
+            тип маркера, текст комментария и одну фразу о том, что требуется.
+
+            Сгруппируй по слоям: contracts, backend, frontend, ci.
+            Внутри группы FIXME и HACK ставь выше TODO и XXX.
+
+            ## Что делать с результатом
+
+            В режиме dry-run: выведи отчёт в вывод задачи и заверши работу,
+            issue не создавай и существующие не трогай.
+
+            В обычном режиме:
+
+            1. Найди открытый issue с меткой `tech-debt` и заголовком,
+               начинающимся на «Технический долг:». Если такой есть — закрой
+               его с state_reason=completed и комментарием со ссылкой на новый.
+            2. Создай новый issue:
+               - заголовок: «Технический долг: N маркеров на YYYY-MM-DD»
+               - метка: `tech-debt`
+               - тело: сводная таблица по слоям, затем детальный список
+                 со ссылками на строки
+            3. Если маркеров не найдено — новый issue не создавай, ограничься
+               сообщением в выводе задачи.
+
+            Код не меняй: задача только на чтение и отчёт.
