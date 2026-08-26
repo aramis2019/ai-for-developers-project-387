@@ -7,8 +7,18 @@ import type { components } from "./schema";
  */
 export type ApiError = components["schemas"]["ErrorBody"];
 
-/** Тексты для пользователя по машиночитаемому коду. */
-const messages: Record<string, string> = {
+/**
+ * Строго типизированный код ошибки из контракта.
+ * `string`-ветку union исключаем, чтобы словарь покрывал только
+ * машиночитаемые коды с явным описанием в TypeSpec.
+ */
+type KnownErrorCode = Exclude<
+  components["schemas"]["ErrorCode"],
+  string
+>;
+
+/** Тексты для пользователя по машиночитаемому коду из контракта. */
+const messages: Record<KnownErrorCode, string> = {
   SLOT_ALREADY_BOOKED: "Это время только что заняли. Выберите другой слот.",
   SLOT_OUT_OF_WINDOW: "Записаться можно только на ближайшие 14 дней.",
   SLOT_NOT_ALIGNED: "Некорректное время начала встречи.",
@@ -17,7 +27,15 @@ const messages: Record<string, string> = {
   EVENT_TYPE_ALREADY_EXISTS: "Тип события с таким идентификатором уже существует.",
   VALIDATION_FAILED: "Проверьте введённые данные.",
   BAD_REQUEST: "Некорректный запрос.",
+};
+
+/**
+ * Тексты для кодов, которые сервер возвращает через open-ended `string`-ветку
+ * union (не зафиксированы в TypeSpec, но встречаются на практике).
+ */
+const extraMessages: Record<string, string> = {
   INTERNAL_ERROR: "Что-то пошло не так на сервере. Попробуйте позже.",
+  NOT_FOUND: "Запрашиваемый ресурс не найден.",
 };
 
 /** Похоже ли значение на тело ошибки контракта. */
@@ -34,7 +52,11 @@ export function isApiError(value: unknown): value is ApiError {
 /** Текст для пользователя. Незнакомый код — показываем `message` сервера. */
 export function describeError(error: unknown): string {
   if (!isApiError(error)) return "Не удалось выполнить запрос. Проверьте соединение.";
-  return messages[error.code] ?? error.message;
+  return (
+    messages[error.code as KnownErrorCode] ??
+    extraMessages[error.code] ??
+    error.message
+  );
 }
 
 /**
