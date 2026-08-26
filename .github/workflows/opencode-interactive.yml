@@ -1,5 +1,13 @@
 name: "opencode: interactive"
 
+# Реакция на комментарии.
+# Триггер — комментарий в issue или PR, содержащий /oc или /opencode.
+# Примеры:
+#   /oc объясни этот issue
+#   /oc добавь обработку ошибок
+# На запрос с изменением кода агент заводит ветку, коммитит и открывает PR,
+# поэтому job работает с write-правами на contents/pull-requests/issues.
+
 on:
   issue_comment:
     types: [created]
