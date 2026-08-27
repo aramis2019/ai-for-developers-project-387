@@ -302,7 +302,14 @@ Workflow `.github/workflows/ci.yml` запускается на каждый pus
 Multibranch job
 [`hexlet/Hexlet.Meetly`](https://jenkins.lurax.ru/job/hexlet/job/Hexlet.Meetly/),
 pipeline в `infrastructure/jenkins/meetly-quick-linux.jenkinsfile`.
-Стадии на каждый push (webhook из GitHub):
+
+Сборку запускает периодическое сканирование репозитория (`H/5 * * * *`) —
+задержка от коммита до старта до 5 минут. Webhook в репозитории заведён, но
+события не доходят: хост Jenkins закрыт whitelist-фильтром провайдера, подсети
+GitHub в него не входят. Событийный запуск заработает, когда в firewall откроют
+443 для диапазонов из `https://api.github.com/meta` (ключ `hooks`).
+
+Стадии на каждую сборку:
 
 | Стадия | Проверки |
 | --- | --- |
