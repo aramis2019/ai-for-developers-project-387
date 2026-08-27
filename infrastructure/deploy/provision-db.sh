@@ -38,16 +38,24 @@ psql_super() {
     sudo -u postgres psql --no-psqlrc --quiet "$@"
 }
 
+# Пароль уходит в psql через stdin, а не аргументом командной строки:
+# аргументы видны в ps любому пользователю системы, stdin — нет.
+# Одинарные кавычки внутри пароля удваиваются по правилам SQL.
+escaped_password="$(printf '%s' "$DB_PASSWORD" | sed "s/'/''/g")"
+
 # Роль. CREATE ROLE IF NOT EXISTS в PostgreSQL нет, поэтому проверяем сами.
 # Пароль задаётся при каждом запуске — так кластер и .env не разъезжаются.
-# Кавычит значение сам psql через :'pw', ручное экранирование не нужно.
 if [ "$(psql_super -Atc "select 1 from pg_roles where rolname = '$DB_USER'")" = "1" ]; then
     echo "Роль $DB_USER уже есть — обновляю пароль"
-    psql_super -v pw="$DB_PASSWORD" -c "ALTER ROLE $DB_USER LOGIN PASSWORD :'pw'" >/dev/null
+    action=ALTER
 else
     echo "Создаю роль $DB_USER"
-    psql_super -v pw="$DB_PASSWORD" -c "CREATE ROLE $DB_USER LOGIN PASSWORD :'pw'" >/dev/null
+    action=CREATE
 fi
+
+psql_super >/dev/null <<SQL
+$action ROLE $DB_USER LOGIN PASSWORD '$escaped_password';
+SQL
 
 # База. CREATE DATABASE нельзя выполнить внутри транзакции или DO-блока.
 if [ "$(psql_super -Atc "select 1 from pg_database where datname = '$DB_NAME'")" = "1" ]; then
