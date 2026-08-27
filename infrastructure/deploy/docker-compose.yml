@@ -6,8 +6,18 @@
 #
 # Edge — общий Traefik (/home/development/traefik-app, сеть webproxy):
 # TLS от Let's Encrypt (резолвер letsEncrypt), HTTP→HTTPS редирект.
-# Приложение видит только Traefik; Postgres — только приложение
-# (внутренняя сеть, наружу не публикуется).
+#
+# База данных — хостовый PostgreSQL 18 (системный сервис, кластер 18/main),
+# а не контейнер. Тот же кластер обслуживает iplocator. Роль и БД заводит
+# provision-db.sh, доступ ограничен в pg_hba.conf docker-подсетями.
+#
+# На Linux алиас host.docker.internal не существует по умолчанию — его даёт
+# extra_hosts с host-gateway. Так же подключается iplocator.
+#
+# Приложение применяет миграции и сидер на старте (InitializeMeetlyAsync).
+# Если Postgres в этот момент недоступен, старт падает — это осознанно:
+# restart: unless-stopped перезапустит контейнер, пока БД не поднимется.
+# Отдельного depends_on/healthcheck здесь нет, БД живёт вне compose.
 
 services:
   meetly-app:
@@ -16,16 +26,14 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       PORT: "8080"
       Storage__Provider: Postgres
-      ConnectionStrings__Meetly: Host=meetly-db;Port=5432;Database=meetly;Username=meetly;Password=${MEETLY_DB_PASSWORD}
-    depends_on:
-      meetly-db:
-        condition: service_healthy
+      ConnectionStrings__Meetly: Host=host.docker.internal;Port=5432;Database=meetly;Username=meetly;Password=${MEETLY_DB_PASSWORD}
     networks:
       - webproxy
-      - meetly-internal
     logging:
       driver: json-file
       options:
@@ -38,38 +46,8 @@ services:
       - "traefik.http.routers.meetly.tls=true"
       - "traefik.http.routers.meetly.tls.certresolver=letsEncrypt"
       - "traefik.http.services.meetly.loadbalancer.server.port=8080"
-      # У контейнера две сети — явно говорим Traefik, через какую ходить.
       - "traefik.docker.network=webproxy"
-
-  meetly-db:
-    image: postgres:17-alpine
-    container_name: meetly-db
-    restart: unless-stopped
-    security_opt:
-      - no-new-privileges:true
-    environment:
-      POSTGRES_DB: meetly
-      POSTGRES_USER: meetly
-      POSTGRES_PASSWORD: ${MEETLY_DB_PASSWORD}
-    volumes:
-      - meetly-db-data:/var/lib/postgresql/data
-    networks:
-      - meetly-internal
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U meetly -d meetly"]
-      interval: 10s
-      timeout: 3s
-      retries: 5
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-volumes:
-  meetly-db-data:
 
 networks:
   webproxy:
     external: true
-  meetly-internal:
