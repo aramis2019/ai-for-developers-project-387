@@ -31,6 +31,12 @@ COPY frontend/ frontend/
 # CORS в проде не нужен. schema.d.ts закоммичен — TypeSpec здесь не нужен.
 ARG VITE_API_URL=""
 ENV VITE_API_URL=$VITE_API_URL
+
+# Версия сборки в футере. Тот же APP_VERSION, что уходит в InformationalVersion
+# бэкенда ниже: ARG объявляется в каждой стадии отдельно, значение одно.
+ARG APP_VERSION=dev
+ENV VITE_APP_VERSION=$APP_VERSION
+
 RUN npm run build -w @meetly/frontend
 
 # --- Стадия 2: publish бэкенда -------------------------------------------

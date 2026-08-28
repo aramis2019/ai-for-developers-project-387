@@ -1,6 +1,7 @@
 import { Anchor, AppShell, Badge, Container, Group, Skeleton, Text, Title } from "@mantine/core";
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { useOwnerProfile } from "../api/queries";
+import { AppFooter } from "../components/AppFooter";
 import { timeZoneLabel } from "../lib/datetime";
 
 /**
@@ -66,12 +67,14 @@ export function AdminLayout() {
         <Container size="lg" py="lg">
           <Outlet />
         </Container>
-        <Container size="lg" pb="xl">
+        <Container size="lg">
           <Text size="xs" c="dimmed">
             Расписание владельца — в {profile?.timeZone ?? "UTC"}. Время встреч ниже показано
             в вашем поясе ({timeZoneLabel()}).
           </Text>
         </Container>
+
+        <AppFooter size="lg" />
       </AppShell.Main>
     </AppShell>
   );

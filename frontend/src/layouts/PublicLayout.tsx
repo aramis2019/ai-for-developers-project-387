@@ -1,5 +1,6 @@
 import { Anchor, AppShell, Badge, Container, Group, Text, Title } from "@mantine/core";
 import { Link, Outlet } from "react-router-dom";
+import { AppFooter } from "../components/AppFooter";
 import { timeZoneLabel } from "../lib/datetime";
 
 /** Публичная часть: шапка с названием и меткой часового пояса гостя. */
@@ -32,13 +33,16 @@ export function PublicLayout() {
         <Container size="md" py="lg">
           <Outlet />
         </Container>
-      </AppShell.Main>
 
-      <Container size="md" pb="xl">
-        <Text size="xs" c="dimmed" ta="center">
-          Запись доступна на ближайшие 14 дней.
-        </Text>
-      </Container>
+        {/* Подсказка про окно записи — внутри Main, как в админском лейауте. */}
+        <Container size="md">
+          <Text size="xs" c="dimmed" ta="center">
+            Запись доступна на ближайшие 14 дней.
+          </Text>
+        </Container>
+
+        <AppFooter size="md" />
+      </AppShell.Main>
     </AppShell>
   );
 }
