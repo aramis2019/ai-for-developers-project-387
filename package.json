@@ -1,6 +1,6 @@
 {
   "name": "meetly",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "description": "Meetly — сервис записи на встречи. Монорепозиторий: контракт, бэкенд, фронтенд.",
   "repository": {
