@@ -1,5 +1,6 @@
 import { Anchor, Container, Divider, Group, Text } from "@mantine/core";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 /**
  * Версия задеплоенной сборки.
@@ -29,6 +30,8 @@ type AppFooterProps = {
  * высоту у календаря. Этот живёт в потоке документа и виден после контента.
  */
 export function AppFooter({ size }: AppFooterProps) {
+  const { t } = useTranslation();
+
   return (
     <>
       <Divider mt="xl" />
@@ -40,10 +43,10 @@ export function AppFooter({ size }: AppFooterProps) {
 
           <Group gap="lg" wrap="wrap">
             <Anchor component={Link} to="/" size="xs" c="dimmed">
-              Виды встреч
+              {t("footer.eventTypes")}
             </Anchor>
             <Anchor component={Link} to="/admin/bookings" size="xs" c="dimmed">
-              Админка
+              {t("footer.admin")}
             </Anchor>
             <Anchor href={REPOSITORY_URL} target="_blank" rel="noreferrer" size="xs" c="dimmed">
               GitHub
@@ -51,7 +54,7 @@ export function AppFooter({ size }: AppFooterProps) {
           </Group>
 
           <Text size="xs" c="dimmed" ff="monospace">
-            сборка {appVersion}
+            {t("footer.build", { version: appVersion })}
           </Text>
         </Group>
       </Container>

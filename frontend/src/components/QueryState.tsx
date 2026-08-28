@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Alert, Center, Loader, Stack, Text } from "@mantine/core";
+import { useTranslation } from "react-i18next";
 import { describeError } from "../api/errors";
 
 interface QueryStateProps {
@@ -22,10 +23,12 @@ export function QueryState({
   isPending,
   error,
   isEmpty = false,
-  emptyTitle = "Пока пусто",
+  emptyTitle,
   emptyText,
   children,
 }: QueryStateProps) {
+  const { t } = useTranslation();
+
   if (isPending) {
     return (
       <Center py="xl">
@@ -36,7 +39,7 @@ export function QueryState({
 
   if (error) {
     return (
-      <Alert color="red" title="Не удалось загрузить данные" variant="light">
+      <Alert color="red" title={t("queryState.loadFailed")} variant="light">
         {describeError(error)}
       </Alert>
     );
@@ -45,7 +48,7 @@ export function QueryState({
   if (isEmpty) {
     return (
       <Stack gap={4} py="xl" align="center">
-        <Text fw={600}>{emptyTitle}</Text>
+        <Text fw={600}>{emptyTitle ?? t("queryState.emptyTitle")}</Text>
         {emptyText && (
           <Text size="sm" c="dimmed" ta="center">
             {emptyText}

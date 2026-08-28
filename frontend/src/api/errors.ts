@@ -1,3 +1,4 @@
+import i18n from "../i18n";
 import type { components } from "./schema";
 
 /**
@@ -8,35 +9,28 @@ import type { components } from "./schema";
 export type ApiError = components["schemas"]["ErrorBody"];
 
 /**
- * Строго типизированный код ошибки из контракта.
- * `string`-ветку union исключаем, чтобы словарь покрывал только
- * машиночитаемые коды с явным описанием в TypeSpec.
+ * Коды, у которых есть перевод в словарях i18n (секция `errors`).
+ * Контрактные коды из TypeSpec плюс пара практических (INTERNAL_ERROR,
+ * NOT_FOUND), приходящих через open-ended `string`-ветку union.
  */
-type KnownErrorCode = Exclude<
-  components["schemas"]["ErrorCode"],
-  string
->;
+const translatedCodes = [
+  "SLOT_ALREADY_BOOKED",
+  "SLOT_OUT_OF_WINDOW",
+  "SLOT_NOT_ALIGNED",
+  "SLOT_OUTSIDE_WORKING_HOURS",
+  "EVENT_TYPE_NOT_FOUND",
+  "EVENT_TYPE_ALREADY_EXISTS",
+  "VALIDATION_FAILED",
+  "BAD_REQUEST",
+  "INTERNAL_ERROR",
+  "NOT_FOUND",
+] as const;
 
-/** Тексты для пользователя по машиночитаемому коду из контракта. */
-const messages: Record<KnownErrorCode, string> = {
-  SLOT_ALREADY_BOOKED: "Это время только что заняли. Выберите другой слот.",
-  SLOT_OUT_OF_WINDOW: "Записаться можно только на ближайшие 14 дней.",
-  SLOT_NOT_ALIGNED: "Некорректное время начала встречи.",
-  SLOT_OUTSIDE_WORKING_HOURS: "Встреча не помещается в рабочие часы.",
-  EVENT_TYPE_NOT_FOUND: "Этот вид встречи больше недоступен.",
-  EVENT_TYPE_ALREADY_EXISTS: "Тип события с таким идентификатором уже существует.",
-  VALIDATION_FAILED: "Проверьте введённые данные.",
-  BAD_REQUEST: "Некорректный запрос.",
-};
+type TranslatedCode = (typeof translatedCodes)[number];
 
-/**
- * Тексты для кодов, которые сервер возвращает через open-ended `string`-ветку
- * union (не зафиксированы в TypeSpec, но встречаются на практике).
- */
-const extraMessages: Record<string, string> = {
-  INTERNAL_ERROR: "Что-то пошло не так на сервере. Попробуйте позже.",
-  NOT_FOUND: "Запрашиваемый ресурс не найден.",
-};
+function isTranslatedCode(code: string): code is TranslatedCode {
+  return (translatedCodes as readonly string[]).includes(code);
+}
 
 /** Похоже ли значение на тело ошибки контракта. */
 export function isApiError(value: unknown): value is ApiError {
@@ -49,14 +43,21 @@ export function isApiError(value: unknown): value is ApiError {
   );
 }
 
-/** Текст для пользователя. Незнакомый код — показываем `message` сервера. */
+/**
+ * Текст для пользователя на текущем языке. Незнакомый код — показываем
+ * `message` сервера (он приходит на языке сервера, это осознанное ограничение).
+ *
+ * Функция читает i18n на каждый вызов: компоненты, подписанные на смену языка
+ * через useTranslation, при перерисовке получают текст на новом языке.
+ */
 export function describeError(error: unknown): string {
-  if (!isApiError(error)) return "Не удалось выполнить запрос. Проверьте соединение.";
-  return (
-    messages[error.code as KnownErrorCode] ??
-    extraMessages[error.code] ??
-    error.message
-  );
+  if (!isApiError(error)) return i18n.t("errors.network");
+  if (isTranslatedCode(error.code)) {
+    // Ключи секции errors совпадают с кодами контракта по построению,
+    // поэтому шаблонный литерал даёт точный union существующих ключей.
+    return i18n.t(`errors.${error.code}`);
+  }
+  return error.message;
 }
 
 /**

@@ -1,5 +1,6 @@
 import { Button, Stack, TextInput, Textarea } from "@mantine/core";
 import { useForm } from "@mantine/form";
+import { useTranslation } from "react-i18next";
 import { constraints, emailPattern } from "../../api/constraints";
 import type { Guest } from "../../api/client";
 
@@ -19,25 +20,30 @@ interface GuestFormProps {
  * его `422 VALIDATION_FAILED` раскладывается по полям через `serverErrors`.
  */
 export function GuestForm({ disabled, submitting, onSubmit, serverErrors }: GuestFormProps) {
+  const { t } = useTranslation();
   const { guest } = constraints;
 
   const form = useForm<Guest>({
     initialValues: { name: "", email: "", note: "" },
     validate: {
       name: (value) => {
-        if (value.trim().length < guest.nameMinLength) return "Укажите имя";
-        if (value.length > guest.nameMaxLength) return `Не длиннее ${guest.nameMaxLength} символов`;
+        if (value.trim().length < guest.nameMinLength) return t("guestForm.nameRequired");
+        if (value.length > guest.nameMaxLength) {
+          return t("guestForm.tooLong", { max: guest.nameMaxLength });
+        }
         return null;
       },
       email: (value) => {
-        if (!value.trim()) return "Укажите e-mail";
-        if (!emailPattern.test(value)) return "Похоже, в адресе опечатка";
-        if (value.length > guest.emailMaxLength) return `Не длиннее ${guest.emailMaxLength} символов`;
+        if (!value.trim()) return t("guestForm.emailRequired");
+        if (!emailPattern.test(value)) return t("guestForm.emailInvalid");
+        if (value.length > guest.emailMaxLength) {
+          return t("guestForm.tooLong", { max: guest.emailMaxLength });
+        }
         return null;
       },
       note: (value) =>
         (value?.length ?? 0) > guest.noteMaxLength
-          ? `Не длиннее ${guest.noteMaxLength} символов`
+          ? t("guestForm.tooLong", { max: guest.noteMaxLength })
           : null,
     },
   });
@@ -54,12 +60,12 @@ export function GuestForm({ disabled, submitting, onSubmit, serverErrors }: Gues
   return (
     // noValidate отключает встроенную проверку браузера: иначе на `type="email"`
     // Chrome перехватывает отправку раньше Mantine и показывает собственное
-    // англоязычное сообщение вместо наших текстов.
+    // сообщение на языке браузера вместо наших локализованных текстов.
     <form onSubmit={handleSubmit} noValidate>
       <Stack gap="sm">
         <TextInput
-          label="Имя"
-          placeholder="Как к вам обращаться"
+          label={t("guestForm.nameLabel")}
+          placeholder={t("guestForm.namePlaceholder")}
           withAsterisk
           disabled={disabled}
           maxLength={guest.nameMaxLength}
@@ -68,8 +74,8 @@ export function GuestForm({ disabled, submitting, onSubmit, serverErrors }: Gues
         />
 
         <TextInput
-          label="E-mail"
-          placeholder="you@example.com"
+          label={t("guestForm.emailLabel")}
+          placeholder={t("guestForm.emailPlaceholder")}
           type="email"
           withAsterisk
           disabled={disabled}
@@ -79,8 +85,8 @@ export function GuestForm({ disabled, submitting, onSubmit, serverErrors }: Gues
         />
 
         <Textarea
-          label="Комментарий"
-          description="Необязательно: тема встречи, вопросы, ссылки"
+          label={t("guestForm.noteLabel")}
+          description={t("guestForm.noteDescription")}
           autosize
           minRows={2}
           maxRows={6}
@@ -91,7 +97,7 @@ export function GuestForm({ disabled, submitting, onSubmit, serverErrors }: Gues
         />
 
         <Button type="submit" disabled={disabled} loading={submitting} mt="xs">
-          Записаться
+          {t("guestForm.submit")}
         </Button>
       </Stack>
     </form>

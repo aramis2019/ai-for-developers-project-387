@@ -1,10 +1,14 @@
 import { Anchor, AppShell, Badge, Container, Group, Text, Title } from "@mantine/core";
 import { Link, Outlet } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { AppFooter } from "../components/AppFooter";
+import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { timeZoneLabel } from "../lib/datetime";
 
 /** Публичная часть: шапка с названием и меткой часового пояса гостя. */
 export function PublicLayout() {
+  const { t } = useTranslation();
+
   return (
     <AppShell header={{ height: 60 }} padding="md">
       <AppShell.Header>
@@ -19,11 +23,12 @@ export function PublicLayout() {
                 подписываем зону, иначе 09:00 UTC выглядит как ошибка.
               */}
               <Badge variant="light" size="sm">
-                Время: {timeZoneLabel()}
+                {t("layout.timeBadge", { tz: timeZoneLabel() })}
               </Badge>
               <Anchor component={Link} to="/admin/bookings" size="sm" c="dimmed">
-                Админка
+                {t("layout.adminLink")}
               </Anchor>
+              <LanguageSwitcher />
             </Group>
           </Group>
         </Container>
@@ -37,7 +42,7 @@ export function PublicLayout() {
         {/* Подсказка про окно записи — внутри Main, как в админском лейауте. */}
         <Container size="md">
           <Text size="xs" c="dimmed" ta="center">
-            Запись доступна на ближайшие 14 дней.
+            {t("layout.publicHint")}
           </Text>
         </Container>
 

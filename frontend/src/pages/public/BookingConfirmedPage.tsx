@@ -1,5 +1,6 @@
 import { Alert, Button, Card, Group, Stack, Text, Title } from "@mantine/core";
 import { Link, Navigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import type { Booking } from "../../api/client";
 import { formatDateLong, formatDuration, formatRange, timeZoneLabel } from "../../lib/datetime";
 
@@ -11,6 +12,7 @@ import { formatDateLong, formatDuration, formatRange, timeZoneLabel } from "../.
  * нельзя. При заходе без state возвращаем гостя к списку.
  */
 export function BookingConfirmedPage() {
+  const { t } = useTranslation();
   const location = useLocation();
   const booking = (location.state as { booking?: Booking } | null)?.booking;
 
@@ -19,9 +21,9 @@ export function BookingConfirmedPage() {
   return (
     <Stack gap="lg" maw={560}>
       <div>
-        <Title order={1}>Вы записаны</Title>
+        <Title order={1}>{t("confirmed.title")}</Title>
         <Text c="dimmed" mt={4}>
-          Подтверждение отправлено на {booking.guest.email}
+          {t("confirmed.emailSent", { email: booking.guest.email })}
         </Text>
       </div>
 
@@ -39,12 +41,12 @@ export function BookingConfirmedPage() {
             {formatRange(booking.start, booking.end)}
           </Text>
           <Text size="xs" c="dimmed">
-            Время в вашем поясе ({timeZoneLabel()})
+            {t("confirmed.timeInYourTz", { tz: timeZoneLabel() })}
           </Text>
 
           {booking.guest.note && (
             <Text size="sm" c="dimmed" mt="xs">
-              Комментарий: {booking.guest.note}
+              {t("confirmed.note", { note: booking.guest.note })}
             </Text>
           )}
         </Stack>
@@ -55,14 +57,11 @@ export function BookingConfirmedPage() {
         (contracts/docs/domain.md, раздел 5) — кнопок для них тоже быть не должно.
       */}
       <Alert variant="light" color="gray">
-        <Text size="sm">
-          Чтобы отменить или перенести встречу, напишите владельцу календаря — в текущей
-          версии сервиса это делается вручную.
-        </Text>
+        <Text size="sm">{t("confirmed.cancelHint")}</Text>
       </Alert>
 
       <Button component={Link} to="/" variant="default">
-        Записаться ещё раз
+        {t("confirmed.bookAgain")}
       </Button>
     </Stack>
   );

@@ -5,9 +5,12 @@ import { Notifications } from "@mantine/notifications";
 import { DatesProvider } from "@mantine/dates";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css";
 import "@mantine/notifications/styles.css";
+// Инициализация i18n (детектор языка, словари, локали dayjs) — до рендера.
+import "./i18n";
 import { router } from "./routes";
 
 const queryClient = new QueryClient({
@@ -22,15 +25,36 @@ const queryClient = new QueryClient({
   },
 });
 
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
+/**
+ * Провайдеры, зависящие от текущего языка.
+ *
+ * useTranslation подписывает компонент на смену языка, поэтому DatesProvider
+ * (названия месяцев и дней недели в календаре Mantine) обновляется вместе
+ * с остальным интерфейсом.
+ */
+function App() {
+  const { i18n } = useTranslation();
+
+  return (
     <MantineProvider defaultColorScheme="auto">
-      <DatesProvider settings={{ locale: "ru", firstDayOfWeek: 1, weekendDays: [0, 6] }}>
+      <DatesProvider
+        settings={{
+          locale: i18n.resolvedLanguage ?? "en",
+          firstDayOfWeek: 1,
+          weekendDays: [0, 6],
+        }}
+      >
         <QueryClientProvider client={queryClient}>
           <Notifications position="top-right" />
           <RouterProvider router={router} />
         </QueryClientProvider>
       </DatesProvider>
     </MantineProvider>
+  );
+}
+
+createRoot(document.getElementById("root")!).render(
+  <StrictMode>
+    <App />
   </StrictMode>,
 );

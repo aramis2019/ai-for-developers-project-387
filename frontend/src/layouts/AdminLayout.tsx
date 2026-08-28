@@ -1,7 +1,9 @@
 import { Anchor, AppShell, Badge, Container, Group, Skeleton, Text, Title } from "@mantine/core";
 import { Link, NavLink, Outlet } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useOwnerProfile } from "../api/queries";
 import { AppFooter } from "../components/AppFooter";
+import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { timeZoneLabel } from "../lib/datetime";
 
 /**
@@ -13,6 +15,7 @@ import { timeZoneLabel } from "../lib/datetime";
  * увидит гость.
  */
 export function AdminLayout() {
+  const { t } = useTranslation();
   const { data: profile, isPending } = useOwnerProfile();
 
   return (
@@ -24,7 +27,7 @@ export function AdminLayout() {
               <Group gap="xs" align="baseline">
                 <Title order={3}>Meetly</Title>
                 <Text size="sm" c="dimmed">
-                  админка
+                  {t("layout.adminCaption")}
                 </Text>
               </Group>
 
@@ -39,10 +42,10 @@ export function AdminLayout() {
                     {profile.workingHours.start}–{profile.workingHours.end} {profile.timeZone}
                   </Badge>
                   <Badge size="xs" variant="light">
-                    шаг {profile.slotStepMinutes} мин
+                    {t("layout.stepBadge", { minutes: profile.slotStepMinutes })}
                   </Badge>
                   <Badge size="xs" variant="light">
-                    окно {profile.bookingWindowDays} дней
+                    {t("layout.windowBadge", { count: profile.bookingWindowDays })}
                   </Badge>
                 </Group>
               ) : null}
@@ -50,14 +53,15 @@ export function AdminLayout() {
 
             <Group gap="lg">
               <Anchor component={NavLink} to="/admin/bookings" size="sm">
-                Встречи
+                {t("layout.navBookings")}
               </Anchor>
               <Anchor component={NavLink} to="/admin/event-types" size="sm">
-                Типы событий
+                {t("layout.navEventTypes")}
               </Anchor>
               <Anchor component={Link} to="/" size="sm" c="dimmed">
-                На сайт
+                {t("layout.navToSite")}
               </Anchor>
+              <LanguageSwitcher />
             </Group>
           </Group>
         </Container>
@@ -69,8 +73,10 @@ export function AdminLayout() {
         </Container>
         <Container size="lg">
           <Text size="xs" c="dimmed">
-            Расписание владельца — в {profile?.timeZone ?? "UTC"}. Время встреч ниже показано
-            в вашем поясе ({timeZoneLabel()}).
+            {t("layout.ownerScheduleHint", {
+              ownerTz: profile?.timeZone ?? "UTC",
+              tz: timeZoneLabel(),
+            })}
           </Text>
         </Container>
 

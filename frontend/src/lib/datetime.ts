@@ -2,12 +2,11 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import localizedFormat from "dayjs/plugin/localizedFormat";
-import "dayjs/locale/ru";
+import i18n from "../i18n";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
 dayjs.extend(localizedFormat);
-dayjs.locale("ru");
 
 /**
  * Работа со временем.
@@ -19,6 +18,10 @@ dayjs.locale("ru");
  * Важное правило: обратно в API отправляется **та же строка**, что пришла
  * в слоте. Никаких пересборок даты из компонентов — иначе легко потерять
  * выравнивание по сетке и получить `422 SLOT_NOT_ALIGNED`.
+ *
+ * Локаль dayjs выставляет i18n (см. i18n/index.ts) при старте и смене языка.
+ * Функции ниже читают её на каждый вызов: компоненты, подписанные на смену
+ * языка через useTranslation, при перерисовке получают свежие форматы.
  */
 
 /** Часовой пояс браузера, например `Europe/Moscow`. */
@@ -33,19 +36,22 @@ export function timeZoneLabel(): string {
   return minutes === 0 ? `UTC${sign}${hours}` : `UTC${sign}${hours}:${String(minutes).padStart(2, "0")}`;
 }
 
-/** `2026-08-17T09:30:00Z` → `12:30` в местном времени. */
+/** `2026-08-17T09:30:00Z` → `12:30` (или `12:30 PM` для en) в местном времени. */
 export function formatTime(utcIso: string): string {
-  return dayjs(utcIso).format("HH:mm");
+  return dayjs(utcIso).format("LT");
 }
 
-/** `2026-08-17T09:30:00Z` → `17 августа, понедельник`. */
+/** `2026-08-17T09:30:00Z` → `17 августа, понедельник` / `Monday, August 17`. */
 export function formatDateLong(utcIso: string | Date): string {
-  return dayjs(utcIso).format("D MMMM, dddd");
+  return dayjs(utcIso).format(i18n.t("dateFormats.long"));
 }
 
-/** `2026-08-17T09:30:00Z` → `17.08.2026, 12:30`. */
+/**
+ * `2026-08-17T09:30:00Z` → `17.08.2026, 12:30` (ru/de), `08/17/2026, 12:30 PM` (en).
+ * Локализованные токены плагина localizedFormat: L — дата, LT — время.
+ */
 export function formatDateTime(utcIso: string): string {
-  return dayjs(utcIso).format("DD.MM.YYYY, HH:mm");
+  return dayjs(utcIso).format("L, LT");
 }
 
 /** Интервал встречи одной строкой: `12:30 – 13:00`. */
@@ -98,10 +104,12 @@ export function groupSlotsByLocalDay<T extends SlotLike>(slots: readonly T[]): S
     .map(([dayKey, daySlots]) => ({ dayKey, slots: daySlots }));
 }
 
-/** Продолжительность в минутах человеческим текстом: `1 ч 30 мин`. */
+/** Продолжительность в минутах человеческим текстом: `1 ч 30 мин` / `1 h 30 min`. */
 export function formatDuration(minutes: number): string {
-  if (minutes < 60) return `${minutes} мин`;
+  if (minutes < 60) return i18n.t("duration.minutes", { count: minutes });
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;
-  return rest === 0 ? `${hours} ч` : `${hours} ч ${rest} мин`;
+  return rest === 0
+    ? i18n.t("duration.hours", { count: hours })
+    : i18n.t("duration.hoursMinutes", { hours, minutes: rest });
 }

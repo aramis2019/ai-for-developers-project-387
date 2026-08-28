@@ -1,4 +1,5 @@
 import { Button, SimpleGrid, Stack, Text } from "@mantine/core";
+import { useTranslation } from "react-i18next";
 import type { Slot } from "../../api/client";
 import { formatDateLong, formatTime, timeZoneLabel } from "../../lib/datetime";
 
@@ -18,10 +19,12 @@ interface SlotPickerProps {
  * иначе легко сдвинуть время и получить `422 SLOT_NOT_ALIGNED`.
  */
 export function SlotPicker({ slots, selectedStart, onSelect }: SlotPickerProps) {
+  const { t } = useTranslation();
+
   if (slots.length === 0) {
     return (
       <Text c="dimmed" size="sm">
-        Выберите день в календаре.
+        {t("booking.pickDayHint")}
       </Text>
     );
   }
@@ -30,7 +33,7 @@ export function SlotPicker({ slots, selectedStart, onSelect }: SlotPickerProps) 
     <Stack gap="xs">
       <Text fw={600}>{formatDateLong(slots[0]!.start)}</Text>
       <Text size="xs" c="dimmed">
-        Время указано в вашем поясе ({timeZoneLabel()})
+        {t("booking.timesInYourTz", { tz: timeZoneLabel() })}
       </Text>
 
       <SimpleGrid cols={{ base: 3, sm: 4 }} spacing="xs" mt="xs">

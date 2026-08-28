@@ -1,4 +1,5 @@
 import { Badge, Card, Group, Stack, Table, Text, Title } from "@mantine/core";
+import { useTranslation } from "react-i18next";
 import { useUpcomingBookings } from "../../api/queries";
 import { QueryState } from "../../components/QueryState";
 import { formatDateLong, formatDuration, formatRange } from "../../lib/datetime";
@@ -14,6 +15,7 @@ import { groupSlotsByLocalDay } from "../../lib/datetime";
  * Прошедшие встречи в этот эндпоинт не попадают по контракту.
  */
 export function AdminBookingsPage() {
+  const { t } = useTranslation();
   const { data, isPending, error } = useUpcomingBookings();
 
   const days = groupSlotsByLocalDay(data ?? []);
@@ -22,11 +24,11 @@ export function AdminBookingsPage() {
     <Stack gap="lg">
       <div>
         <Group gap="sm" align="baseline">
-          <Title order={1}>Предстоящие встречи</Title>
+          <Title order={1}>{t("adminBookings.title")}</Title>
           {data && <Badge variant="light">{data.length}</Badge>}
         </Group>
         <Text c="dimmed" mt={4}>
-          Все типы событий в одном списке — занятость в календаре сквозная.
+          {t("adminBookings.subtitle")}
         </Text>
       </div>
 
@@ -34,8 +36,8 @@ export function AdminBookingsPage() {
         isPending={isPending}
         error={error}
         isEmpty={data?.length === 0}
-        emptyTitle="Встреч пока нет"
-        emptyText="Как только гость забронирует слот, встреча появится здесь."
+        emptyTitle={t("adminBookings.emptyTitle")}
+        emptyText={t("adminBookings.emptyText")}
       >
         <Stack gap="lg">
           {days.map((day) => (
@@ -47,10 +49,10 @@ export function AdminBookingsPage() {
               <Table verticalSpacing="sm" horizontalSpacing="md" highlightOnHover>
                 <Table.Thead>
                   <Table.Tr>
-                    <Table.Th w={130}>Время</Table.Th>
-                    <Table.Th>Тип события</Table.Th>
-                    <Table.Th>Гость</Table.Th>
-                    <Table.Th>Комментарий</Table.Th>
+                    <Table.Th w={130}>{t("adminBookings.thTime")}</Table.Th>
+                    <Table.Th>{t("adminBookings.thEventType")}</Table.Th>
+                    <Table.Th>{t("adminBookings.thGuest")}</Table.Th>
+                    <Table.Th>{t("adminBookings.thNote")}</Table.Th>
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>

@@ -1,5 +1,6 @@
 import { Badge, Card, Group, Stack, Text, Title, UnstyledButton } from "@mantine/core";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useEventTypes } from "../../api/queries";
 import { QueryState } from "../../components/QueryState";
 import { formatDuration } from "../../lib/datetime";
@@ -11,15 +12,16 @@ import { formatDuration } from "../../lib/datetime";
  * description, durationMinutes). Ничего сверх контракта здесь нет.
  */
 export function EventTypesPage() {
+  const { t } = useTranslation();
   const { data, isPending, error } = useEventTypes();
   const navigate = useNavigate();
 
   return (
     <Stack gap="lg">
       <div>
-        <Title order={1}>Выберите вид встречи</Title>
+        <Title order={1}>{t("eventTypes.title")}</Title>
         <Text c="dimmed" mt={4}>
-          После выбора откроется календарь свободного времени.
+          {t("eventTypes.subtitle")}
         </Text>
       </div>
 
@@ -27,8 +29,8 @@ export function EventTypesPage() {
         isPending={isPending}
         error={error}
         isEmpty={data?.length === 0}
-        emptyTitle="Пока нет доступных встреч"
-        emptyText="Владелец календаря ещё не настроил ни одного типа события."
+        emptyTitle={t("eventTypes.emptyTitle")}
+        emptyText={t("eventTypes.emptyText")}
       >
         <Stack gap="md">
           {data?.map((eventType) => (

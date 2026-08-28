@@ -13,6 +13,7 @@ import {
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import type { Guest, Slot } from "../../api/client";
 import { useCreateBooking, useEventTypes, useSlots } from "../../api/queries";
 import {
@@ -36,6 +37,7 @@ import { formatDuration, formatRange, groupSlotsByLocalDay } from "../../lib/dat
  * задача клиента.
  */
 export function BookingPage() {
+  const { t } = useTranslation();
   const { eventTypeId } = useParams<{ eventTypeId: string }>();
   const navigate = useNavigate();
 
@@ -72,11 +74,14 @@ export function BookingPage() {
     if (isEventTypeGone(slotsQuery.error)) {
       notifications.show({
         color: "red",
-        title: "Встреча недоступна",
+        title: t("booking.notifyUnavailableTitle"),
         message: describeError(slotsQuery.error),
       });
       navigate("/", { replace: true });
     }
+    // t намеренно не в зависимостях: смена языка не должна показывать
+    // уведомление повторно.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slotsQuery.error, navigate]);
 
   const daySlots = days.find((day) => day.dayKey === selectedDay)?.slots ?? [];
@@ -99,7 +104,7 @@ export function BookingPage() {
             void slotsQuery.refetch();
             notifications.show({
               color: "orange",
-              title: "Выберите другое время",
+              title: t("booking.notifyPickAnotherTitle"),
               message: describeError(error),
             });
             return;
@@ -108,7 +113,7 @@ export function BookingPage() {
           if (isEventTypeGone(error)) {
             notifications.show({
               color: "red",
-              title: "Встреча недоступна",
+              title: t("booking.notifyUnavailableTitle"),
               message: describeError(error),
             });
             navigate("/", { replace: true });
@@ -121,7 +126,7 @@ export function BookingPage() {
           if (Object.keys(fields).length === 0) {
             notifications.show({
               color: "red",
-              title: "Не удалось записаться",
+              title: t("booking.notifyFailedTitle"),
               message: describeError(error),
             });
           }
@@ -134,7 +139,7 @@ export function BookingPage() {
     <Stack gap="lg">
       <Breadcrumbs>
         <Anchor component={Link} to="/" size="sm">
-          Виды встреч
+          {t("booking.breadcrumbHome")}
         </Anchor>
         <Text size="sm" c="dimmed">
           {eventType?.title ?? eventTypeId}
@@ -143,7 +148,7 @@ export function BookingPage() {
 
       <div>
         <Group gap="sm" align="baseline">
-          <Title order={1}>{eventType?.title ?? "Запись на встречу"}</Title>
+          <Title order={1}>{eventType?.title ?? t("booking.fallbackTitle")}</Title>
           {slotsQuery.data && (
             <Badge variant="light">{formatDuration(slotsQuery.data.durationMinutes)}</Badge>
           )}
@@ -159,8 +164,8 @@ export function BookingPage() {
         isPending={slotsQuery.isPending}
         error={isEventTypeGone(slotsQuery.error) ? null : slotsQuery.error}
         isEmpty={slotsQuery.data?.slots.length === 0}
-        emptyTitle="Свободного времени нет"
-        emptyText="На ближайшие 14 дней всё занято. Загляните позже."
+        emptyTitle={t("booking.emptyTitle")}
+        emptyText={t("booking.emptyText")}
       >
         {slotsQuery.data && (
           <Grid gutter="lg">
@@ -190,7 +195,9 @@ export function BookingPage() {
                     <Stack gap="sm">
                       <Alert variant="light" color="blue" p="xs">
                         <Text size="sm">
-                          Выбрано: {formatRange(selectedSlot.start, selectedSlot.end)}
+                          {t("booking.selectedRange", {
+                            range: formatRange(selectedSlot.start, selectedSlot.end),
+                          })}
                         </Text>
                       </Alert>
 
@@ -205,7 +212,7 @@ export function BookingPage() {
                 ) : (
                   daySlots.length > 0 && (
                     <Text size="sm" c="dimmed">
-                      Выберите время, чтобы заполнить контактные данные.
+                      {t("booking.fillHint")}
                     </Text>
                   )
                 )}
