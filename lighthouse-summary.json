@@ -1,0 +1,109 @@
+{
+  "generatedAt": "2026-08-26T18:38:23.325Z",
+  "lighthouseVersion": "12.8.2",
+  "settings": {
+    "formFactor": "mobile",
+    "throttlingMethod": "simulate",
+    "cpuSlowdownMultiplier": 4,
+    "rttMs": 150,
+    "throughputKbps": 1638.4
+  },
+  "pages": [
+    {
+      "label": "book",
+      "url": "https://meetly.linnetlab.com/book/intro-call",
+      "runs": 1,
+      "score": {
+        "median": 65,
+        "values": [
+          65
+        ]
+      },
+      "metrics": {
+        "FCP": {
+          "unit": "ms",
+          "median": 4510,
+          "values": [
+            4510
+          ]
+        },
+        "LCP": {
+          "unit": "ms",
+          "median": 4763,
+          "values": [
+            4763
+          ]
+        },
+        "CLS": {
+          "unit": "score",
+          "median": 0,
+          "values": [
+            0
+          ]
+        },
+        "TBT": {
+          "unit": "ms",
+          "median": 256,
+          "values": [
+            256
+          ]
+        },
+        "SI": {
+          "unit": "ms",
+          "median": 5204,
+          "values": [
+            5204
+          ]
+        }
+      }
+    },
+    {
+      "label": "home",
+      "url": "https://meetly.linnetlab.com/",
+      "runs": 1,
+      "score": {
+        "median": 65,
+        "values": [
+          65
+        ]
+      },
+      "metrics": {
+        "FCP": {
+          "unit": "ms",
+          "median": 4501,
+          "values": [
+            4501
+          ]
+        },
+        "LCP": {
+          "unit": "ms",
+          "median": 4501,
+          "values": [
+            4501
+          ]
+        },
+        "CLS": {
+          "unit": "score",
+          "median": 0,
+          "values": [
+            0
+          ]
+        },
+        "TBT": {
+          "unit": "ms",
+          "median": 335,
+          "values": [
+            335
+          ]
+        },
+        "SI": {
+          "unit": "ms",
+          "median": 4501,
+          "values": [
+            4501
+          ]
+        }
+      }
+    }
+  ]
+}
