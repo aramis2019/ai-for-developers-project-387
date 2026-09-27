@@ -1,0 +1,133 @@
+{
+  "generatedAt": "2026-09-27T01:55:56.109Z",
+  "lighthouseVersion": "12.8.2",
+  "settings": {
+    "formFactor": "mobile",
+    "throttlingMethod": "simulate",
+    "cpuSlowdownMultiplier": 4,
+    "rttMs": 150,
+    "throughputKbps": 1638.4
+  },
+  "pages": [
+    {
+      "label": "book",
+      "url": "https://meetly.linnetlab.com/book/intro-call",
+      "runs": 3,
+      "score": {
+        "median": 66,
+        "values": [
+          59,
+          66,
+          67
+        ]
+      },
+      "metrics": {
+        "FCP": {
+          "unit": "ms",
+          "median": 5103,
+          "values": [
+            5119,
+            5102,
+            5103
+          ]
+        },
+        "LCP": {
+          "unit": "ms",
+          "median": 5359,
+          "values": [
+            5384,
+            5355,
+            5359
+          ]
+        },
+        "CLS": {
+          "unit": "score",
+          "median": 0,
+          "values": [
+            0.052,
+            0,
+            0
+          ]
+        },
+        "TBT": {
+          "unit": "ms",
+          "median": 87,
+          "values": [
+            335,
+            87,
+            75
+          ]
+        },
+        "SI": {
+          "unit": "ms",
+          "median": 5119,
+          "values": [
+            5119,
+            5498,
+            5103
+          ]
+        }
+      }
+    },
+    {
+      "label": "home",
+      "url": "https://meetly.linnetlab.com/",
+      "runs": 3,
+      "score": {
+        "median": 67,
+        "values": [
+          42,
+          68,
+          67
+        ]
+      },
+      "metrics": {
+        "FCP": {
+          "unit": "ms",
+          "median": 5130,
+          "values": [
+            5352,
+            5101,
+            5130
+          ]
+        },
+        "LCP": {
+          "unit": "ms",
+          "median": 5199,
+          "values": [
+            5706,
+            5199,
+            5145
+          ]
+        },
+        "CLS": {
+          "unit": "score",
+          "median": 0.078,
+          "values": [
+            0.078,
+            0,
+            0.078
+          ]
+        },
+        "TBT": {
+          "unit": "ms",
+          "median": 48,
+          "values": [
+            925,
+            48,
+            29
+          ]
+        },
+        "SI": {
+          "unit": "ms",
+          "median": 5130,
+          "values": [
+            5779,
+            5101,
+            5130
+          ]
+        }
+      }
+    }
+  ]
+}
